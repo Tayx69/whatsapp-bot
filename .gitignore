@@ -1,0 +1,21 @@
+# ============ Folder Session WhatsApp ============
+session/
+auth_info.json
+creds.json
+baileys_auth_info.json
+
+# ============ File API Key & Data Rahasia ============
+.env
+
+# ============ File & Folder Node.js ============
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ============ File Cache ============
+.cache/
+*.log
+
+# ============ Sistem (macOS/Windows) ============
+.DS_Store
+Thumbs.db
