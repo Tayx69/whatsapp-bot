@@ -11,11 +11,11 @@ baileys_auth_info.json
 node_modules/
 npm-debug.log
 yarn-error.log
-log/
 
 # ============ File Cache ============
 .cache/
 *.log
+log/
 
 # ============ Sistem (macOS/Windows) ============
 .DS_Store
