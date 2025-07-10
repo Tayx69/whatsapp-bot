@@ -64,6 +64,10 @@ async function connectBot() {
       text = msg.message.conversation;
     } else if (msg.message.extendedTextMessage?.text) {
       text = msg.message.extendedTextMessage.text;
+    } else if (msg.message.imageMessage?.caption) {
+      text = msg.message.imageMessage.caption;
+    } else if (msg.message.videoMessage?.caption) {
+      text = msg.message.videoMessage.caption;
     }
 
     if (!text) return;

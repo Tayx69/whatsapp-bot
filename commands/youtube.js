@@ -49,7 +49,7 @@ module.exports = async (sock, msg, args) => {
       react: { text: "✅", key: msg.key },
     });
 
-    fs.unlinkSync(filepath); // Hapus file sementara di temp/
+    fs.unlinkSync(filepath);
   } catch (err) {
     console.error("❌ YTMP4 Error:", err);
     await sock.sendMessage(msg.key.remoteJid, {

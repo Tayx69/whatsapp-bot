@@ -1,5 +1,18 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
+const fs = require("fs");
+const path = require("path");
+const cron = require("node-cron");
+
+const dbPath = path.join(__dirname, "../log/nsfw-log.json");
+
+// Buat folder & file log jika belum ada
+if (!fs.existsSync(path.join(__dirname, "../log"))) {
+  fs.mkdirSync(path.join(__dirname, "../log"));
+}
+if (!fs.existsSync(dbPath)) {
+  fs.writeFileSync(dbPath, "[]", "utf-8");
+}
 
 function acakArray(arr) {
   return arr.sort(() => Math.random() - 0.5);
@@ -8,7 +21,7 @@ function acakArray(arr) {
 function normalize(text) {
   return text
     .toLowerCase()
-    .replace(/[\W_]+/g, " ")
+    .replace(/[^\w\s]/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -52,35 +65,45 @@ module.exports = async (sock, msg, args) => {
 
   try {
     let konten = [];
+    const log = JSON.parse(fs.readFileSync(dbPath));
 
-    if (searchMode) {
-      for (let i = 1; i <= 10; i++) {
-        const pageData = await scrapePage(i);
-        const filtered = pageData.filter((x) =>
-          normalize(x.title).includes(normalize(query))
-        );
-        konten.push(...filtered);
-        if (konten.length >= 5) break;
-      }
+    let page = 1;
+    while (page <= 1153 && konten.length < 10) {
+      const pageData = await scrapePage(page);
+      const filtered = searchMode
+        ? pageData.filter(
+            (x) =>
+              normalize(x.title).includes(normalize(query)) &&
+              !log.includes(x.link)
+          )
+        : pageData.filter((x) => !log.includes(x.link));
+      konten.push(...filtered);
+      if (konten.length > 0) break;
+      page++;
+    }
 
-      if (konten.length === 0) {
-        return await sock.sendMessage(
-          msg.key.remoteJid,
-          {
-            text: `❌ Tidak ditemukan hasil untuk: *${query}*`,
-          },
-          { quoted: msg }
-        );
-      }
-    } else {
-      const randomPage = Math.floor(Math.random() * 1153);
-      konten = await scrapePage(randomPage);
+    if (konten.length === 0) {
+      await sock.sendMessage(msg.key.remoteJid, {
+        react: { text: "❌", key: msg.key },
+      });
+
+      return await sock.sendMessage(
+        msg.key.remoteJid,
+        {
+          text: `❌ Tidak ditemukan hasil baru untuk: *${query}*`,
+        },
+        {
+          quoted: msg,
+        }
+      );
     }
 
     konten = acakArray(konten);
     const item = konten[0];
+    log.push(item.link);
+    fs.writeFileSync(dbPath, JSON.stringify(log, null, 2));
 
-    const caption = `🔞 *${item.title}*\n📁 Kategori: ${item.category}\n👀 ${item.views_count} | 🔁 ${item.share_count}\n🌐 ${item.link}`;
+    const caption = `📁 Kategori: ${item.category}\n👀 ${item.views_count} | 🔁 ${item.share_count}`;
 
     if (item.type.includes("video")) {
       await sock.sendMessage(
@@ -100,7 +123,7 @@ module.exports = async (sock, msg, args) => {
       react: { text: "✅", key: msg.key },
     });
   } catch (err) {
-    console.error("❌ hentai error:", err.message);
+    console.error("❌ NSFW error:", err.message);
     await sock.sendMessage(
       msg.key.remoteJid,
       { text: "⚠️ Gagal mengambil konten." },
@@ -111,3 +134,8 @@ module.exports = async (sock, msg, args) => {
     });
   }
 };
+
+// Reset log otomatis tiap minggu
+cron.schedule("0 2 * * 0", () => {
+  fs.writeFileSync(dbPath, "[]", "utf-8");
+});
